@@ -1,4 +1,5 @@
-import { Client } from '@hiveio/dhive';
+import { Client } from '@hiveio/dhive/lib/client';
+import { PublicKey, Signature, cryptoUtils } from '@hiveio/dhive/lib/crypto';
 import {
   ExcludeCommonParams,
   IStep,
@@ -54,7 +55,6 @@ import {
 } from './interfaces/keychain.interface';
 import { getLoginError } from './utils/login';
 import { SwapConf, SwapConfig, getConfig, getServerStatus } from './utils/swap';
-const Dhive = require('@hiveio/dhive');
 
 const client = new Client([
   'https://api.hive.blog',
@@ -201,10 +201,10 @@ export class KeychainSDK {
                 await client.keys.getKeyReferences([response.publicKey!])
               )?.accounts;
               if (accounts?.[0]?.includes(data.username!)) {
-                const signature = Dhive.Signature.fromString(response.result);
-                const key = Dhive.PublicKey.fromString(response.publicKey);
+                const signature = Signature.fromString(response.result as unknown as string);
+                const key = PublicKey.fromString(response.publicKey as unknown as string);
                 const result = key.verify(
-                  Dhive.cryptoUtils.sha256(response.data.message),
+                  cryptoUtils.sha256(response.data.message),
                   signature,
                 );
                 if (result) {
@@ -1748,8 +1748,7 @@ export class KeychainSDK {
     ) => {
       const req = await (
         await fetch(
-          `${SwapConf.baseURL}/token-swap/estimate/${startToken}/${endToken}/${
-            amount + ''
+          `${SwapConf.baseURL}/token-swap/estimate/${startToken}/${endToken}/${amount + ''
           }`,
         )
       ).json();
@@ -1956,3 +1955,4 @@ export class KeychainSDK {
 }
 export * from './interfaces/keychain-sdk.interface';
 export * from './interfaces/keychain.interface';
+

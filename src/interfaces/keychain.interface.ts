@@ -1,4 +1,4 @@
-import type { SignedTransaction } from '@hiveio/dhive/lib/chain/transaction';
+import type { TransactionType as SignedTransaction } from 'hive-tx';
 
 export interface KeychainOptions {
   rpc?: string;

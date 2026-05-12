@@ -1,5 +1,4 @@
-import { Client } from '@hiveio/dhive/lib/client';
-import { PublicKey, Signature, cryptoUtils } from '@hiveio/dhive/lib/crypto';
+import { sha256 } from '@noble/hashes/sha2.js';
 import {
   ExcludeCommonParams,
   IStep,
@@ -7,6 +6,7 @@ import {
   VscUtils,
 } from 'hive-keychain-commons';
 import { RequestSignedCall } from 'hive-keychain-commons/lib/interfaces/keychain';
+import { callRPC, PublicKey, Signature } from 'hive-tx';
 import { v4 as uuidv4 } from 'uuid';
 import {
   AddAccount,
@@ -54,13 +54,7 @@ import {
   VscOptions,
 } from './interfaces/keychain.interface';
 import { getLoginError } from './utils/login';
-import { SwapConf, SwapConfig, getConfig, getServerStatus } from './utils/swap';
-
-const client = new Client([
-  'https://api.hive.blog',
-  'https://api.openhive.network',
-  'https://api.deathwing.me',
-]);
+import { getConfig, getServerStatus, SwapConf, SwapConfig } from './utils/swap';
 
 /**
  * @description
@@ -197,14 +191,18 @@ export class KeychainSDK {
             if (response.error) {
               reject(response);
             } else {
-              const accounts = (
-                await client.keys.getKeyReferences([response.publicKey!])
-              )?.accounts;
+              const rpcResult = await callRPC(
+                'account_by_key_api.get_key_references',
+                { keys: [response.publicKey!] },
+              );
+              const accounts: string[][] | undefined = rpcResult?.accounts;
               if (accounts?.[0]?.includes(data.username!)) {
-                const signature = Signature.fromString(response.result as unknown as string);
-                const key = PublicKey.fromString(response.publicKey as unknown as string);
+                const signature = Signature.from(
+                  response.result as any as string,
+                );
+                const key = PublicKey.from(response.publicKey!);
                 const result = key.verify(
-                  cryptoUtils.sha256(response.data.message),
+                  sha256(new TextEncoder().encode(response.data.message)),
                   signature,
                 );
                 if (result) {
